@@ -521,6 +521,145 @@ console.log( bar.a); //2
 ```
 通过`new`调用`foo`，我们新建了一个对象，并且将调用`foo`的`this`设置为了这个新的对象，因此`new`是函数`this`值中最后一个可能绑定方式，可称为“构造绑定”。
 
+## 顺序之我知
+
+至此，我们已经了解了4中不同关于`this`的规则，那么需要我们做的就是：找到`call-site`（函数调用的位置），并配对应的规则就好了，那么问题来了：要是`call-site`能匹配上多条规则，那该怎么办呢？这就涉及到上述几条规则的优先级问题了。首先，能明确的是，默认的绑定方式肯定是优先级最低的，所以我们可以先把它放置一边，先看看其他几条规则：
+
+隐性绑定和显性绑定哪个优先级高呢？
+
+```js
+function foo() {
+				    console.log( this.a );
+}
+
+var obj1 = {
+				    a:2,
+				    foo: foo
+};
+
+var obj2 = {
+				    a:3,
+				    foo: foo
+};
+// 隐性绑定
+obj1.foo(); //2
+obj2.foo(); //3
+// 显性绑定
+obj1.foo.call(obj2); //3
+obj2.foo.call(obj1); //2
+```
+
+从上得知，显性绑定优先于隐性绑定的，所以当我们寻找`call-site`并发现有多条规则对应它时，显性绑定是优先于隐性绑定的。构造绑定怎么样呢？
+
+```js
+function foo(something) {
+				    this.a = something;
+}
+
+var obj1 = {
+				    foo: foo
+};
+
+var obj2 = {};
+
+obj1.foo(2);
+console.log( obj1.a);//2
+
+obj1.foo.call( obj2,3 );
+console.log(obj2.a);//3
+
+var bar = new obj1.foo(4);
+console.log(obj1.a);// 2
+
+//这里输出4而不是2就说明构造绑定要优先于隐性绑定
+console.log(bar.a);//4? 2? 4
+```
+那接着就是构造绑定和显性绑定谁强谁弱呢？
+
+**注意**：`new`和`call/apply`不能同时使用，也就是说不会有`new foo.call( obj1)`这样的调用，但是我们还是可以通过`硬绑定`来测试二者的优先级的。
+
+先回忆下硬绑定，它是通过`Function.prototype.bind()`来强制绑定`this`到特定对象的，这种方法是一种显性绑定方式，很厉害，我们猜想它的优先级别应该要高于`new`的。
+
+```js
+function foo(something) {
+				this.a = something;
+				}
+
+var obj1 = {};
+var bar = foo.bind(obj1);
+bar(2);
+console.log(obj1.a); //2
+
+var baz = new bar(3);
+console.log(obj1.a); //2
+console.log(baz.a); //3
+```
+这里，没有如我们预想一般改变`obj1.a`的值，但是通过硬绑定的`bar`的函数却被`new`复写了，其实这里不能算是对`bar`的复写，而是通过`new`我们返回了一个新的对象`baz`，而`baz.a`值为3而已。
+
+那么构造绑定能复写硬绑定有什么用？
+
+最大的用处在于：我们可以建立一个函数（通过`new`来构造一个对象）,并从本质上来忽略`this`的硬绑定。另外`bind(...)`会将在第一个`this`后的参数最为默认的标准参数传递给函数。**这里暂时搁浅深入学习**
+
+
+## **this**之于我
+
+我们学习了关于`this`的4条规则，现在我们来总结下载函数调用位置决定`this`的各种不同，根据它们的优先级来讨论：
+
+1. 函数是通过`new`调用的？(构造绑定)若为是那么`this`就是我们新构造的对象。
+
+`var bar = new foo()`
+
+2. 函数是通过`call/apply`调用的？(显性绑定),或者是通过`bind`硬绑定？若是，`this`就是显性绑定给特定的对象。
+
+`var bar = foo.call( obj2 );`
+
+3. 函数通过上下文被调用？(隐性绑定),或者函数本身就是属于或者包含于对象？若是，`this`就是这个上下文。
+
+`var bar = obj1.foo()`
+
+4. 其他所有，就是默认的`this`值（默认绑定），若是`use strict`模式，就是`undefined`，不是就是`window/global`。
+
+`var bar = foo()`
+
+以上就是我们几乎全乎的对`this`的理解了，知道这个就基本明了`this`。
+
+## 一些例外
+
+总有一些例外想颠覆规则，总有一天要好好收拾你们：
+
+### 忽略
+
+当使用显性绑定，并传入`null undefined `（call, apply, bind)时，这就意味着此处的显性绑定，`this`是被忽略了，取而代之的是默认绑定：
+
+```js
+function foo() {
+				console.log( this.a );
+}
+
+var a = 2;
+foo.call( null ); //2
+```
+这是这么厉害，话说这里这么绑定是为什么呀？我现在还不知道这种用处是干什么用的，当时既然存在可能就有某种意义吧，以后遇到可以学习学些！
+没想到这么快就遇到了，通过`apply`传入一个数组参数的方式调用函数，同样地，通过`bind()`引入某些形参：
+
+```js
+function foo(a,b) {
+				console.log( "a:" + a + ", b:" + b);
+}
+//将数组作为形参传递
+foo.apply( null, [2,3]); // a:2, b:3
+//bind(...)
+var bar = foo.bind(null,2); //若this为null，那么后面的参数作为默认值引入
+bar(3); // a:2, b:3
+```
+
+好像很有用的样子，需要实例的联系才能更好的理解，这里就可以设置一个目标了，比如通过学习某个工具库来实现对这些知识更好的掌握，哪个工具库呢，之后决定吧！可能是`underscore loadsh`。
+
+### 
+
+
+
+
 
 
 
