@@ -1,1 +1,0 @@
-../scope & closures/you-dont-know-js_Scope.md
