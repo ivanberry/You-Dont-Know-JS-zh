@@ -1,0 +1,37 @@
+S or Editor folders
+._*
+.cache
+.DS_Store
+.idea
+.project
+.settings
+.tmproj
+./.idea
+*.esproj
+*.sublime-project
+*.sublime-workspace
+nbproject
+Thumbs.db
+manifest.json
+*.scss
+*.css.map
+.*.md.swp
+
+
+# Project
+/Application/Runtime
+/.idea/
+/.project
+/.git/
+/Application/Common/Conf/db.php
+/Application/Common/Conf/mock_user.php
+/phpmyadmin/
+/phpmyadmin
+/Public/App/js/release/
+/Public/Home/js/release/
+/Public/App/css/**/*.min.css
+/Public/Home/css/**/*.min.css
+/Uploads/**/*
+
+
+

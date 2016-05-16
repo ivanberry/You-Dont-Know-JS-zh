@@ -698,6 +698,99 @@ o.foo(); //3
 **注意**：不管通过什么方式调用函数而发生默认绑定时，上下文是否为严格模式的状态使得`this`，而不是函数调用位置，来决定默认绑定的值：严格模式下的`global`(全局),非严格模式下的`undefined`。
 
 ### 软绑定
+我们利用硬绑定实现`this`绑定给特定的对象（当然你可以通过`new`来复写它），但是问题来了，硬绑定的实现使得我们的函数变得不灵活，应该有更灵活的办法来实现同样的目的的。
+
+要是能实现某种不同的默认绑定，而这种绑定又不是绑定给`global`或者`undefined`，并且还可以让函数能通过显性或隐性的绑定给特定的对象，我们称这个为**软绑定**的方式：
+
+```js
+if(!Function.prototype.softBind) {
+				Function.prototype.softBind = function(obj) {
+								var fn = this,
+								curried = [].slice.call( arguments, 1 ),
+								bound = function bound() {
+												return fn.apply(
+												(!this ||
+												 (typeof window !== "undefined"
+												  this === window) ||
+												 (typeof global !=== "undefined"
+												  this === global)
+												 ) ? obj : this,
+												 curried.concat.apply( curried, arguments )
+												 );
+								};
+								bound.prototype = Object.create( fn.prototype );
+								return bound;
+								};
+}
+```
+
+这里的`softBind`函数和ES6中的`bind`函数定义相近的作用。这一段第二遍在学习吧！**NOTICE**
+
+
+### 词法`this`
+
+一般的函数都基本适用我们提到的4条规则，但是ES6这个鬼啊，又引入了**箭头函数**，它却不适用这些规则，箭头函数不是通过`function`关键字定义的，而是`=>`这个箭头符号，所以就叫它箭头函数罗，真是奇奇怪怪的命名方法啊！与标准的`this`绑定规则不同，箭头函数这个小兄弟确实将`this`绑定到了包含它的函数或全局作用域。
+
+这可以称为箭头函数的词法绑定：
+
+```js
+function foo() {
+				//return an arrow function
+				return (a) => {
+								//`this` is lexically adopted from `foo()`
+								console.log( this.a );
+								};
+}
+
+var obj1 = {
+				a: 2
+};
+var obj2 = {
+				a: 3
+				};
+
+var bar = foo.call( obj1 );
+
+bar.call(obj2); //2 not 3
+```
+
+当`foo`函数被调用时，新建于函数`foo`的箭头函数就捕获了`foo`的`this`值，因为`foo`的`this`值是绑定到对象`obj1`的，所以`bar`（指向箭头函数的一个索引）也就将`this`绑定到了对象`obj1`上，这种词法的绑定方式不能被复写，甚至于`new`的构造绑定规则。它普遍的适用于作为事件处理函数和计时器的回调：
+
+```js
+function foo() {
+				setTimeout( () => {
+								//`this` is lexcially adopted from foo
+								console.log( this.a );
+				},100);
+}
+
+var obj = {
+				a:2
+};
+
+foo.call( obj ); //2
+```
+
+## 总结
+
+正在执行函数的`this`值是由函数调用位置决定的，一旦明确它调用的位置，我们可以按以下的顺序找到对应的`this`绑定值：
+
+1. 通过`new`来调用的？那就是肯定是新构造的对象罗。
+2. 通过`call/apply/bind`调用？那就是这个特定的对象呀。
+3. 在某个上下文环境中被调用？ 那就这这个上下文对象落。
+4. 默认的方式：严格模式下的`undefined`,非严格模式下的全局对象。
+
+留意不经意的默认绑定方式。假如，你想安全的忽略一个`this`绑定，一个真正的空对象可能可以帮到（代码中有提到如何建立一个真正的空对象，∅ = Object.create( null )）你。
+
+4条绑定规则之外，ES6引入的箭头函数利用词法作用域来时实现自己`this`值得绑定，这意味着它将`this`值绑定到了包含它的函数调用位置。
+
+
+
+
+
+
+
+
 
 
 
