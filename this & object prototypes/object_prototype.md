@@ -100,9 +100,110 @@ var myObject = {
 myObject.a; //2
 myObject["a"]; //2
 ```
+获取对象属性的方法有两种`.`和`[]`，它们之间的区别或者优劣就不多说了，基本上能能使用`.`的地方可以使用`[]`，不能使用`.`的地方还是能使用`[]`。需要提到的一句：对象中属性名总是以字符串的形式出现，也就是说。不论你定义其他非字符串的属性名，都会自动转换为字符串，这包括数值。
 
+```js
+var myObject = {};
+myObject[true] = "foo";
+myObject[3] = "bar";
+myObject[myObject] = "baz";
+myObject["true"]; //foo
+myObject["3"]; //bar
+myObject["["object object"]"]; //baz
+```
 
+### 拼装属性名
 
+ES6中提供了类似字符拼装的属性名定义方法：
+
+```js
+var prefix = "foo";
+var myObject = {
+				[prefix + "bar"]: "hello",
+				[prefix + "baz"]: "world"
+};
+```
+
+## 属性VS方法
+
+JS语言中对属性和方法的区别是没有什么大的必要的，当访问对象的某个属性时就是属性访问，不管这会返回什么样的数据，假如刚好返回的是一个函数，这也没有必要说是一个方法访问，两者称谓的差别是没有什么很大意义的。
+
+```js
+function foo() {
+				console.log( "foo" );
+}
+
+var someFoo = foo; // variable reference to 'foo'
+var myObject = {
+				someFoo: foo
+};
+
+foo; // function foo() {}
+someFoo; //function foo() {}
+myObject.someFoo; //function foo() {}
+```
+`someFoo`和`myObject.someFoo`是对相同函数的两个不同独立的索引，这并没有使得函数绑定到了某个对象，它们的区别可能在于可能存在函数中`this`值得隐性绑定。
+
+就算是在对象中定义函数表达式，函数也不一定是属于这个对象的，我们还是可以通过不同索引访问到它：
+
+```js
+var myObject = {
+				foo: function foo() {
+								console.log( "foo" );
+				}
+};
+
+var someFoo = myObject.foo;
+
+someFoo; //function foo() {..}
+myObject.foo; //function foo() {...}
+```
+
+## 数组
+
+数组是通过数字`[]`来获取值的，这意味着数组值是存放在某个位置---索引，我们通过非负整数来访问它们。
+
+```js
+var myArray = [ "foo", 42, "bar"];
+
+myArray.length; //3
+myArray[0]; //foo
+myArry[2]; //bar
+```
+
+尽管数组是通过索引值来访问的，我们依然可以在数组中加入属性名：
+
+```js
+var myArray = ["foo", 32, "bar"];
+myArray.baz = "baz";
+myArray.length; //3
+myArray.baz; // "baz"
+```
+
+## 对象复制
+
+开发者可能最需要的对对象的一个处理是对对象的复制，看起来我们需要一个内建的`copy`函数，然而并没有这么厉害，因为对对象的复制不是一个简单的事情，它可能涉及到复制的层级，这就需要某种算法来实现，某种程度上的对象复制了。
+
+```js
+function anotherFunction() { /*...*/ }
+
+var anotherObject = {
+				c: true
+};
+var anotherArray = [];
+var myObject = {
+				a: 2,
+				b: anotherObject, //refrence, not a copy
+				c: anotherArray, //another refrence
+				d: anotherFunction
+};
+
+anotherArray.push( anotherObject, myObject );
+```
+
+要复制一个对象：
+
+首先，我们应该明确我们是要“浅浅的”表层复制还是“深深地”深度复制呢？如上列，表层复制仅仅会对基本数据类型值进行拷贝，而对复制数据类型等则是新建一个索引，指向对应的值，而深度复制是对复制数据类型也复制，而上述代码中，我们的`anotherArray`里推入了`myObject`，这里我们就有一个复制循环了，这该不如是好呢？是陷入无限循环的噩梦？还是直接报错“你妹啊，这玩意叫我怎么深度给你复制，内存不够”，或者屈服二者
 
 
 
