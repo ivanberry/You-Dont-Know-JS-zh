@@ -205,6 +205,90 @@ anotherArray.push( anotherObject, myObject );
 
 首先，我们应该明确我们是要“浅浅的”表层复制还是“深深地”深度复制呢？如上列，表层复制仅仅会对基本数据类型值进行拷贝，而对复制数据类型等则是新建一个索引，指向对应的值，而深度复制是对复制数据类型也复制，而上述代码中，我们的`anotherArray`里推入了`myObject`，这里我们就有一个复制循环了，这该不如是好呢？是陷入无限循环的噩梦？还是直接报错“你妹啊，这玩意叫我怎么深度给你复制，内存不够”，或者屈服二者
 
+另外，复制一个函数是有歧义的。
+
+因此，我们怎么解决这些问题呢？不同的JS框架都有自己的一套解决办法，但是，谁会是标准的做法呢？长时间来，都没有一个定论。一个相对好一点的做法是：JSON-safe，将对象序列化为JSON字符，然后在解序列化，这很容易实现对对象的复制：
+
+```js
+var newObject = JSON.parse( JSON.stringify( someObject ) );
+```
+
+当然，这种方法需要我们明确你的对象是JSON-safe的，但是，它也不是万能的，有些情况下不是那么有效。
+
+同时，表层复制是一个相对容易接受的复制过程，相对有更好的问题，因此，ES6中给出了`Object.assign(..)`来实现表层复制。它接受个目标对象为第一参数，一个或多个源对象为第二，三个更多的参数,这个方法会遍历*enumerable*(能通过`for .. in..`访问到)，直接的属性值键值，通过`=`复制源对象给目标对象，最终方法返回目标对象。
+
+```js
+var newObj = Object.assign( {}, myObject );
+
+anotherObj = {
+				a: 1,
+				b: "Object.assign method",
+				c: "pretty nice WOW!"
+};
+
+myObj = {
+				a: 2,
+				d: "Nice try",
+				e: anotherObj
+};
+
+newObj.e === anotherObj; //true
+```
+
+这个方式很是厉害，值得学习，下一章节，我们学习属性的，并能通过`Object.definedProperty(..)`，来实现更深层次的复制。
+
+
+## 属性类型
+
+ES5中，属性有了自己的类型，不同的类型可能会有不同的特性：
+
+```js
+var myObject = {
+				a: 2
+};
+Object.getOwnPropertyDescriptor( myObject, "a");
+//{
+				value: a,
+				writable: true,
+				enumerable: true,
+				configurable: true
+//}
+
+如上，通过上述几个描述符，我们知道对象某个值不仅仅有`value`为`2`，还有其他的描述符，通过`Oject.definedProperty(..)，我们可以新增或修改对象属性的类型。
+
+```js
+myObject = {
+				Object.definedProperty( myObject, "a", {
+								value: 2,
+								writable: true,
+								configurable: true,
+								enumerable: true
+				});
+
+myObject.a; //2
+```
+
+通过这个方法我们定义了一个属性值，但是除非要对属性本身有操作，不然我们不会使用这种方法来实现对象的定义的。
+
+### 可写
+
+属性是否可以表更是由`writable`来控制的：
+
+```js
+var myObject = {};
+Object.defineProperty( myObject, "a", {
+				value: 2,
+				writable: false, //not writable
+				configurable: true,
+				enumerable: true
+} );
+
+myObject.a = 3;
+myObject.a; //2
+``` 
+				
+
+
 
 
 
