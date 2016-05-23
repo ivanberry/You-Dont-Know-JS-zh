@@ -286,7 +286,110 @@ Object.defineProperty( myObject, "a", {
 myObject.a = 3;
 myObject.a; //2
 ``` 
-				
+
+如上述代码，我们修改`writable : falase`的对象属性，我们不能得到想要的结果，而且在严格模式下，更会报错：
+
+```js
+"use strict";
+var myObject = {};
+Object.defineProperty( myObjet, "a", {
+				value: 2,
+				writable: false,
+				configurable: true,
+				enumerable: true
+};
+
+myObject.a = 3; //TypeError
+```
+
+`TyoeError`报错信息提醒我们：对不可写的属性我们是不能进行复制操作的。
+
+###可配置
+
+通过更改`configurable`描述符，我们可以规定它们是否能被修改，但是谨记一点，一旦`configurable: false`后，我们就不能再对它们修改了，这是一个不可逆的过程。
+
+###枚举
+
+枚举描述符很好的传达了它可配置的信息：当它为真时，属性可以枚举，比如`for...in`，一旦设置为`false`，我们就不能通过枚举访问到它了。
+
+###不可改变
+
+有时，我们需设计一个不能该表的属性或者对象，ES5中有多种方法可以实现这种需求，但是我们需要了解的是，这些操作都是*表层*地操作，只能影响到对象和直接的属性值，如果对象中包含对另一对象的索引（数组，函数和对象等），那么索引对象的值是可以改变的，这是很重要的一点。
+
+```js
+myImmutableObjec.foo; //[1,2,3]
+myImmutableObjec.foo.push( 4) ;
+muImmutableObjec.foo; //[1,2,3,4]
+```
+###对象常量
+
+通过设置`writable`和`configurable`我们可以定义**常量**，一个不能被修改，不能删除的真正意义的常量：
+
+var myObject = {};
+Object.defineProperty( myObject, "FAVORITE_NUMBER", {
+				value: 42,
+				writable: false,
+				configurable: false
+});
+```
+
+###阻止对象拓展
+
+通过`Object.preventExtensions()`我们可以锁死对象，使得其不能新增属性。
+
+```js
+var myObject = {
+				a:a
+};
+Object.preventExtensions( myObject );
+myObject.b = 3;
+
+myOject.b; //undefined
+```
+
+关于属性的一些描述符，这里不再多说，需要进一步学习的可以参考英文原版。
+
+###遍历
+
+`for...in`循环可以遍历对象的`enumerable`属性，但是假如你想遍历值呢？
+对于普通数组而言，对值得遍历可以用`for`循环实现：
+
+```js
+var myArray = [1,2,3];
+for(var i = 0; i < myArray.length; i++ ) {
+				console.log( myArray[i] );
+}
+//1 2 3
+```
+
+这其实不是通过值得遍历，这是通过数组索引的遍历，并通过数字索引访问到数组的值而已，ES5中新增了一些对数组遍历的有用方法：`forEach, every, some`等等，它们都接受一个回调函数，并应用于数组的每个元素，差别仅在于回调函数返回的值不相同。
+
+`forEach`会遍历数组的所有值，并会忽略回调函数返回的任何值，`every`遍历会持续至回调返回`false`，而`some`则是持续遍历至回调返回`true`为止。
+
+`every`和`some`的这些特性，有点像是`for`循环中添加了一个条件判断的`break`，一旦满足某种条件就跳出循环。
+
+如果你通过`for...in`来遍历某个对象，你仅仅也只能间接访问到对象的可遍历属性。但是如果，你想直接遍历数组或对象值，我们可以使用`for..of`方法：
+
+```js
+var myArray = [1,2,3];
+for( var v of myArray ) {
+				console.log( v );
+};
+//1
+//2
+//3
+```
+
+# 总结
+
+对象可以通过对象字面量声明，同样也可以通过`new`构造声明，但是一般情况下，我们可优先使用对象字面量方法，只有当我们需要对对象更多的操作是使用构造函数定义对象会更有优势.
+
+对象键值对的存储，对象属性值可以通过`.propName`或["propName"]来访问，但一个属性被访问时，实际是调用了内部默认的[[GET]]方法（设置水属性当然就是调用[[SET]]方法），这不仅仅是查询对象直接的属性值，它会根据原型链进行深度遍历。
+
+
+
+
+
 
 
 
