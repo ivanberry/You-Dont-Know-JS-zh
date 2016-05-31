@@ -159,6 +159,73 @@ a.constructor === Foo; //true
 
 这里有一通废话：我们默认构造函数大写开头，这刚开始是一个便利的使用方法而已，后来，慢慢称为默认的规范，使得语法检查工具在你没有正确使用相关时会报错，如直接调用某大写开头的函数呀，通过`new`调用非首字母大写的函数等等。
 
+### 构造还是调用？
+
+上述代码块很容易使我们觉得`Foo`是一个构造函数，因为通过`new`的调用，确实实现了”构造”的过程，实际上，`Foo`和其他任何一个函数没有什么差别，函数本身并不是构造函数，当用`new`来调用时，这使得函数称为了一个**构造**调用，实际上，`new`是劫持了普通的函数，使得它构造出一个对象：
+
+```js
+function NothingSpecial() {
+				console.log( "NOooo" );
+}
+var a = new NothingSpecial();
+
+// "Nooo"
+a: // {}
+```
+
+这里我们很明显看到，这里的`NothingSpecial`是一个很普通又很简单的函数，但通过`new`来调用它之后，它确实构造出了一个新的对象,刚好赋值给了`a`,这个调用时**构造**调用，但是`NothingSpecial`本身并不是构造函数。
+
+换句话说，JS中，更加适当说法应该是：构造函数是通过`new`来调用的任何一个函数，函数并不是构造函数，只是能通过`new`来实现构造调用。
+
+### 机理
+
+这些就是所有一些关于类的讨论吗？
+
+那可就不止了，JS开发者费大力地想尽可能地模拟出面向类的概念：
+
+```js
+function Foo(name) {
+				this.name = name;
+}
+Foo.prototype.myName = function() {
+				return this.name;
+}
+var a = new Foo( "a" );
+var b = new Foo( "b" );
+
+a.myName(); //a
+b.myName(); //b
+```
+
+上述代码块存在两个"类导向"在其中：
+
+1. `this.name = name`：新增`name`属性到每一个对象，这和类实例很相似。
+2. `Foo.prototype.myName = ...`：它在`Foo.prototyep`对象上添加了`myName`方法，因此`a.myName()`能被调用，但是它是怎么实现的呢？
+
+`a b`很容易理解成，新建了一个`a b`的对象，`Foo.prototype`上的属性都复制给了`a`, `b`对象，然而，这并没有发生。章节开篇就说道[[Prototype]]链，它在某对象上不能找到某属性时，是怎么处理的。不同于复制`Foo.prototype`，当`a`,`b`建立时，它们的[[Prototype]]链接到了`Foo.prototype`对象，当`myName`在`a`,`b`上找不到时，会通过原型链在`Foo.prototype`上找到，一层一层知道找到或不存在为止。
+
+### 构造redux
+
+我们之前讨论过`constructor`属性时，`a.constructor === true`会返回**true**，这就意味着`a`实际有个属性`constructor`，并指向`Foo`呢？不对，不对！
+
+这很是让人疑惑，`constuctor`同样是指向`Foo.prototype`，碰巧（默认）有个`constructor`指向函数`Foo`。通过`Foo`构造出的`a`可以通过`a.constructor`访问到`Foo`，看起来很是方便，但是这仅仅是一个巧合，`a.constructor`通过[[Prototype]]碰巧指向了`Foo`,会存在各种不同的情况使得这种看起来很美的设定，让你掉坑里，爬都爬不出来。
+
+举个栗子，当`Foo`声明时，默认会在其`prototype`上添加`constuctor`属性，当你新建一个对象时，并替换掉函数默认的`prototype`指引，那么新的对象是不会神奇的获取到`constuctor`属性的。
+
+```js
+function Foo() { }
+Foo.prototype = {} //create a new prototype object
+va al = new Foo();
+al.constructor === Foo; //false!
+al.constructor === Object; //true
+```
+
+
+
+
+
+
+ 
 
 
 
