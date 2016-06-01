@@ -208,9 +208,9 @@ b.myName(); //b
 
 我们之前讨论过`constructor`属性时，`a.constructor === true`会返回**true**，这就意味着`a`实际有个属性`constructor`，并指向`Foo`呢？不对，不对！
 
-这很是让人疑惑，`constuctor`同样是指向`Foo.prototype`，碰巧（默认）有个`constructor`指向函数`Foo`。通过`Foo`构造出的`a`可以通过`a.constructor`访问到`Foo`，看起来很是方便，但是这仅仅是一个巧合，`a.constructor`通过[[Prototype]]碰巧指向了`Foo`,会存在各种不同的情况使得这种看起来很美的设定，让你掉坑里，爬都爬不出来。
+这很是让人疑惑，`constructor`同样是指向`Foo.prototype`，碰巧（默认）有个`constructor`指向函数`Foo`。通过`Foo`构造出的`a`可以通过`a.constructor`访问到`Foo`，看起来很是方便，但是这仅仅是一个巧合，`a.constructor`通过[[Prototype]]碰巧指向了`Foo`,会存在各种不同的情况使得这种看起来很美的设定，让你掉坑里，爬都爬不出来。
 
-举个栗子，当`Foo`声明时，默认会在其`prototype`上添加`constuctor`属性，当你新建一个对象时，并替换掉函数默认的`prototype`指引，那么新的对象是不会神奇的获取到`constuctor`属性的。
+举个栗子，当`Foo`声明时，默认会在其`prototype`上添加`constructor`属性，当你新建一个对象时，并替换掉函数默认的`prototype`指引，那么新的对象是不会神奇的获取到`constructor`属性的。
 
 ```js
 function Foo() { }
@@ -219,6 +219,32 @@ va al = new Foo();
 al.constructor === Foo; //false!
 al.constructor === Object; //true
 ```
+
+`Object()`可没有构造`a1`呀！从表明上看，`Foo`很明确的是构造了`a1`，很多开发者都会认为`Foo`构造了`a1`，然而，当你认为`constructor`就是意味着**由谁构造**的话，事情就变得不是那么正确，如果`construtor`就是由谁构造的话，上述代码块中的`al.constructor`应该就是`Foo`，然而并不是的。
+
+这是什么鬼呢？`al`并没有`constructor`属性，沿原型链向上查询到`Foo.prototype`，但是它也没有这个属性（当然，默认是会有的，只是我们这里复写了），继续沿原型链查询，知道原型链顶端`Object.prototype`，它有个`constructor`属性，指向内建的`Object`函数。
+
+当然我们可以给`Foo.prototype`添加`constructor`属性，但是这需要一些代码来实现，尤其是需要这个属性匹配默认的行为并不被其他不知道的谁影响：
+
+```js
+function Foo() { /*somethig here */ }
+Foo.prototype = { /* create a new prototype object */ };
+//`Oject.defineProperty()`修复`Foo.prototype`上
+//消失的`prototype`属性值
+Object.defineProperty(Foo.prototype, "constructor", {
+				enmuerable: false,
+				writable: true,
+				configurable: true,
+				value: Foo //指向`Foo`的`constructor`属性
+});
+
+```
+
+这花费了很多功夫来定义`constructor`属性，但是通过这一段，我们明白了：不能将**constructor**和**构造某对象的函数**混为一谈的。
+
+
+
+
 
 
 
