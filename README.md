@@ -10,7 +10,9 @@ DONE:
 
 [作用域于闭包](ZH-YDKJS/you-dont-know-js_Scope.md)
 
-[this于函数原型：一](ZH-YDKJS/this_and_object_prototypes-1.md)
+[this](ZH-YDKJS/this_and_object_prototypes-1.md)
+
+[函数原型](ZH-YDKJS/prototypes.md)
 
 
 
