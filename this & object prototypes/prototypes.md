@@ -242,6 +242,121 @@ Object.defineProperty(Foo.prototype, "constructor", {
 
 这花费了很多功夫来定义`constructor`属性，但是通过这一段，我们明白了：不能将**constructor**和**构造某对象的函数**混为一谈的。
 
+`constructor`属性可以被修改，复写（不管是有意还是无意地），因此，我们在代码中最好是尽量不要对它产生依赖。
+
+### 继承
+
+我们了解了一些非原生的不完全正确的“类”的机制，但，我们必须要好好学习JavaScript中继承的概念，以深入JavaScript的“类”，当`a`能通过`Foo.prototype`访问到`myName`方法就是基于**原型继承**的机制，这是我们提到过的。我们之前提到过的，通过原型继承我们不仅能实现对象实例的继承，甚至`Foo.prototype`与`Bar.prototype`的继承，同类的继承比较，相同的地方表现为方向性，而最大的区别为基于原型的继承不是对“类”的复制，而是添加对**原型**的指引。
+
+我们看看典型的基于原型的继承的代码：
+
+```js
+function Foo(name) {
+				this.name = name;
+}
+
+Foo.prototype.myName = function() {
+				return this.name;
+}
+function Bar(name, label) {
+				Foo.call( this, name );
+				this.label = label;
+}
+
+//新建一个对象Bar.prototype指向Foo.prototype
+Bar.prototype = Object.create( Foo.prototype );
+//注意这里的Bar.prototype被重写了，若对它有依赖，需手动修复
+Bar.prototype.myLabel = function() {
+				return this.label;
+}
+var a = new Bar( "a", "obj a" );
+a.myName(); // "a"
+a.myLabel(); // "obj a"
+```
+
+我们需要关注的是`Bar.prototype = Object.create( Foo.prototype)`,`Object.creat( some object)`是新建一个对象，并将新建对象的内置**[[Prototype]]**属性指向`some object`。换句话说就是：新建一个`Bar.prototype`对象指向于`Foo.prototype`。
+
+当`Bar`函数定义时，和其他函数一样，它有个`.prototype`属性，链接于默认的某个对象，当然不是我们所想的`Foo.prototype`，所以通过新建一个`prototype`对象来实现我们预期的那样，这本质上就是对默认的`prototype`的复写过程，使其达到我们的设计需求，而不是保持默认。
+
+这里需要提醒的是，很多会误解下面的代码同样能实现之前的功能，但实际结果却是不能的：
+
+```js
+//并不会如你预期一样
+Bar.prototype = Foo.prototype;
+//部分一致，但是会有其他意向不到的副作用
+Bar.prototype = new Foo();
+```
+`Bar.prototype = Foo.prototype`不会新建一个对象，它仅仅使`Bar.prototype`成为`Foo.prototype`的另一个索引而已，也使得`Bar`直接指向了同`Foo`一样的`Foo.prototype`，这就意味着当你有类似`Bar.prototype.myLabel = ...`，你不是在修改一个独立的对象，而是在修改`Foo.prototype`，这理所当然的会影响到所有连接到`Foo.prototype`的其他对象，这很可能不是你想要的。
+
+`Bar.prototype = new Foo();`确实新建了一个对象，并且也链接到`Foo.prototype`上，然而这是通过`Foo`构造函数完成的。这就意味着，一旦函数`Foo`有什么特别的改动，`Bar.prototype`同样会受到一些影响。
+
+**这里个人的理解不够，先留个坑，当有一定的深度时，再复盘一遍**
+
+所有，暂时最好的办法就是通过`Object.create()`新建一个对象，我们没有调用`Foo`，也就少了一些副作用。
+
+假如有一个标准，可靠的方法来实现得多好呀，由于ES6的到来，我们有一个兼容不是那么完美的方式，通过`__proto__`来实现，ES6中新增了`Object.setPrototypeOf()`函数，它帮我们可靠地实现了：
+
+```js
+//pre-ES6
+//直接粗暴的抛弃默认存在的`Bar.prototype`
+Bar.prototype = Object.create( Foo.prototype );
+//ES6
+//直接修改默认的`Bar.prototype`
+Object.setPrototypeOf( Bar.prototype, Foo.prototype );
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
