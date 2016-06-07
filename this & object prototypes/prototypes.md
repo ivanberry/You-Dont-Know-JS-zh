@@ -304,6 +304,87 @@ Bar.prototype = Object.create( Foo.prototype );
 //直接修改默认的`Bar.prototype`
 Object.setPrototypeOf( Bar.prototype, Foo.prototype );
 ```
+这两者除了上面提及的差别外，没有太多其他，甚至于**pre-ES6**方式还简短点。
+
+### 对"类"的观察
+
+假如你有一个类似`a`的对象，你想看看它链向何处？那我们就需要对它有细致的观察！
+
+```js
+function Foo() {
+				//...
+}
+Foo.prototype.blah = .....;
+var a = new Foo();
+```
+
+那我们怎么才能了解到关于`a`的代理链向呢？第一种方法很简单`instance of`，但是这会加重对JS类概念的误解：
+
+```js
+a instanceof Foo; //true
+```
+
+很明显，`instanceof`操作左边是我们待验证的对象，右边就是可能的**函数**，`instanceof`就是回答了：在`a`整个原型链中，通过`Foo.prototype`指向的对象是否存在？
+
+可惜的是，这仅能用来验证你猜想的`a`是否跟`Foo`存在某种联系，如果是想探索两个相关性不高的对象，`instanceof`就没有什么大的用途了。
+
+需要注意的是，假如你利用`bind()`建立了一个硬链接，`instanceof`也不能起到什么作用。这种情况是很少见的，但是一旦你用了，说明你知道这里隐藏着这样的关系，正如UNIX哲学一样，知道你干什么才干，不然就停手先搞清楚你想干什么！
+
+我们之前提到过，利用“类”的概念来学习，在一定程度上会造成我们对JS更加深入的理解，不是很好的方法，另外探索原型链关系的方法：
+
+```js
+Foo.prototype.isPrototypeof( a ); //true
+```
+
+需要注意的是，我们这里不需要一个叫`Foo`的对象，我们仅仅需要一个对象，这里的`Foo`仅用来举例说明而已，`isPrototypeof`表明了：在`a`整个原型链中，`Foo.prototype`是否存在？
+
+我们进需要两个对象，就这就是考擦它们是否存在某种关系：
+
+```js
+//简单地：考察`b`是否存在于`a`的原型链中
+b.isPrototypeof( a );
+```
+
+这里我们不需要借助类的概念来过渡，就是直接考擦`b,c`两对象是否存在某种关系，同样地，我们甚至可以直接考察某个对象的原型链[[Prototype]]，ES5中使用一下的标准方法：
+
+```js
+//原理性使用
+Object.getPrototypeOf( a );
+
+//常见的使用
+Object.getPrototypeOf( a ) === Foo.prototype; //true
+
+//非标准非全浏览器
+a.__prto__ === Foo.prototype; //true
+```
+这里的`__proto__`魔术般作为索引遍历了对象的内置的原型，这可能在直接考察对象的原型时很是有用。和我们之前的`constructor`一样，`__proto__`并不实际存在于对象，它存在于`Object.prototype`中，这和其他内置函数`toString, isPrototypeOf`一样。
+
+### 对象间的联系
+
+我们已经明确Js中的原型和传统面向对象的语言的类不同，也了解了相关对象间是怎么建立联系的，那么原型机制的关键是什么呢？是什么使得众多的开发费劲脑力想去模拟“类”来建立这种联系呢？
+
+记得我们之前提到过`Object.create()`是我们能很好利用的一个方法吗？下面就实际操作下：
+
+```js
+var foo = {
+				something: function() {
+								console.log( "Tell me something good ... ");
+				}
+};
+
+var bar = Object.create( foo );
+
+bar.somethig(); //Tell me something good...
+```
+
+通过`Object.create`我们新建了一个链接到`foo`的对象(bar)，这使得我们可以利用关于原型链的所有机制，但是却不需要任何关于`new`这些令人疑惑的关于类等等等。
+
+
+
+
+```
+
+
 
 
 
