@@ -379,12 +379,147 @@ bar.somethig(); //Tell me something good...
 
 通过`Object.create`我们新建了一个链接到`foo`的对象(bar)，这使得我们可以利用关于原型链的所有机制，但是却不需要任何关于`new`这些令人疑惑的关于类等等等。
 
+通过`Object.create( null )`我们可以创建一个新的对象，它原型链为空（可以理解为原型链为null,但null本身就是空的），通过这种方式新建的对象，非常适合于存储纯粹的数据，并且不用担心任何其他的原型链对数据的影响。
+
+上面是第一个点，另外，关于纯粹数据的存储过程，我们可能根本不需要关于原型的一些继承，但是我们又明确传递这些值，怎么办好呢？
+
+***这里自己来点理解***
+刚好手上在学习一个利用在线API提供的数据制作一个简单的weather页面，其中利用d3.js来绘制天气预报的曲线图，这就需要数据了，OpenWeather返回的数据结构比较复杂，然而我需要的数据是需要对它重组的，这里，我就碰到一点问题，在学习使用d3.js的过程中，数据的存在形式是这样子的:
+
+```js
+data = [{},{}]
+```
+
+也就是说，每一组数据是以对象的形式存储于数组中的，而我数据中的数据很多，5天每3个小时的天气预测数据，所以我需要重组它，于是，我定义了一个简单的方法：
+
+```js
+var chart_data = [];
+
+function dataReDesign(data) {
+
+					var	chart_meta_data = {},
+						    temp_data,
+								index = data.list[0].dt_txt.lastIndexOf(' ');
+
+								for(let i = 0; i < data.list.length; i++) {
+
+											chart_meta_data.icon = data.list[i].weather[0].icon;
+											chart_meta_data.dt = data.list[i].dt_txt.slice(index + 1);
+											chart_meta_data.temp = data.list[i].main.temp;
+
+											// temp_data = chart_meta_data;
+											// chart_data.push(chart_meta_data);
+											// chart_data[i] = JSON.parse(JSON.stringify(chart_meta_data));
+											chart_data.push(Object.assign({}, chart_meta_data ));
+									}
+				return chart_data;
+}
+```
+
+代码块中注释的部分是我的一些尝试，这里我更加深入理解了关于**简单数据类型**和**复杂数据类型**关于复制的一些知识：
+
+- 简单数据类型的复制是值得复制
+- 复杂数据类型的复制是索引新建
+
+这其中差别，不是很难，但是需要时时刻刻提醒自己：值得复制是在内存中新建一个变量名，并复制一个值给它，它们都需要内存空间，如果修改其中一个，是不会影响另外其他的值，因为它们分属于不同的内存空间，理所当然是不会互相影响的。而后者是索引的新建过程，复制过程新建变量，并赋值，它们都需要内存空间，然而这个值确是一个索引，不是真正的值，它新建一个索引，指向我们的复杂数据类型的值，也就是说这个值在整个内存空间中只有一个，复制的过程是新建一个索引，并指向它，这也理所当然的会有在任何一个位置，对这个值进行修改都会影响到这个值得。
+
+就以上代码实际说明下：
+
+```js
+chart_data.push(chart_meta_data);
+```
+
+它会有什么问题？推入数组中的各个对象全是最后一个遍历出的对象！
+
+```js
+chart_data[i] = JSON.parse(JSON.stringify(chart_meta_data));
+```
+它有什么问题？没有什么很大的问题，能完成我们的预期功能，但是却还是有一些我们不需要的继承属性存在。
+
+```js
+chart_data.push(Object.create( {}, chart_meta_data ));
+```
+这个和上面没有很大的差别，也能实现数据的传递，但是问题也一样，保存的数据不纯粹。
+
+```js
+var ∅ = Object.create( null );
+chart_data.push( Object.create( ∅, chart_meta_data ));
+```
+Perfect,Perfect!
+
+1 实现数据的传递
+2 纯粹化数据
 
 
+插入自己的一些东西，我们接着翻译！
+
+上面说到利用`Object.create( null )`来实现很好地，纯粹地保存数据，优化数据结构。但我们不需要明确两个对象之间存在某种关系时，我们就可是使用这种方法，简单使用对象的赋值会保存JavaScript中给我们**原型继承**，这很好，但是在我们这个需求中它是有害无利的。
+
+### Ojbect.create() 兼容
+
+其实，`Object.create`是在ES5中新增的，现在大多数浏览器是支持的，但是有些旧版本的IE浏览器支持度不够，我们不容忍它，不想做对它的兼容，但是就学习而言，对深入`Object.create`的实现有好处，我们还是学习下对它的兼容：
+
+```js
+if( !Object.create ) {
+				Object.create = function(o) {
+								function F(){}
+								F.prototype = o;
+								return new F();
+				};
+}
+```
+
+这里的实现其实很简单，跟`Object.create`的实现原理是一致的，如果`Object`没有`create`方法，那我们就新建一个，并重写它的`prototype`属性，使得它指向我们的目标对象。
+
+其实我们还有一个用处：
+
+```js
+var anotherObjetct = {
+				a: 2
+};
+
+var myObject = Object.create( anotherObject, {
+				b: {
+								emumerable: false,
+								writable: true,
+								configurable: false,
+								value: 3
+				},
+				c: {
+								emumerable: true,
+								writable: true,
+								configurable: false,
+								value: 4
+				}
+};
+
+myObject.hasOwnProperty( 'a' ); //false
+myObject.hasOwnProperty( 'b' ); //true
+myOJbect.hasOwnProperty( 'c' ); //true
+
+myObject.a;  //2
+myObject.b; //3
+myObject.c; //4
 
 ```
 
+`Object.create`的传入的第二个参数是指定的传入到新对象的值，而没有指定的值也还是能通过原型链访问到。
 
+### 作为**后退**的链接
+
+我们认为，原型链的机制建立了两个对象之间的联系，当一个对象中没有某属性时，我们可能能在原型链中找到它，这看起来有点像对属性的后退支持，然而，我却认为这不是正确理解原型链的观点：
+
+```js
+var anotherObject = {
+				cool: function() {
+								console.log( "cool" );
+				}
+};
+
+var myObject = Object.create( anotherObject );
+myObject.cool(); //"cool"
+```
+这里我们通过原型链可以执行`cool`方法
 
 
 
