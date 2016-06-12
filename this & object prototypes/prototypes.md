@@ -519,8 +519,35 @@ var anotherObject = {
 var myObject = Object.create( anotherObject );
 myObject.cool(); //"cool"
 ```
-这里我们通过原型链可以执行`cool`方法
+这里我们通过原型链可以执行`cool`方法,通过上述的代码我们能实现`myObject`对象的`cool`方法的访问，当然这是以`anotherObject`作为优雅后退的结果,这能很好的实现功能，但是却不利于代码的维护和理解，这并不是说，任何情况我们都不应该使用上述的方法来实现后退，只是在JS中使用的不是普遍而已，假如你发现自己正在使用这样的方法，可以暂停下思考片刻考察这种方法是否真的适用。
 
+**ES6**中的`Proxy`方法提供了“方法未找到”的处理方式，对它的进一步学习可以访问规范或其他资料。
+
+通过以下的实践可以使得我们在从分利用原型链的基础上，使代码更容易理解和维护：
+
+```js
+var anotherObject = {
+				cool: function() {
+								console.log( "cool!" );
+				}
+};
+var myObject = Object.create( anotherObject );
+myObject.doCool = function() {
+				this.cool(); //internal delegation!
+				};
+
+myObject.doCool(); //"cool!"
+```				
+
+这里我们访问了`myObject.doCool()`，它是实际存在于`myObject`对象上的，这使得我们的API设计不那么玄乎，更加明确。同样我们也充分利用了原型链的特征。
+
+##总结
+
+当我们尝试某对象上不存在的属性和方法时，对象内部的**[[Prototype]]**定义了对象**[[Get]]**方法应该查询的位置，这种对象间的层叠链接就是“原型链”，这和嵌套作用域有点类似。
+
+所有普通的对象都有内建的最顶端的`Object.prototype`（类似全局作用域），当在其他任何地方都找不到对象的属性时，查询会止步于此，`toString()`和`valueOf()`等一些常用的工具性方法存在于`Object.prototype`对象上，这就是说这些方法都可以被普通的对象访问到。
+
+最常用的建立两个对象联系的方法是通过`new`调用，`new`调用有4个步骤，之前有详细的介绍过，通过`new`调用建立联系的两个对象中新建对象`prototype`属性碰巧是构建它的对象的一个指引，构建它的函数通常被称为**构造函数**，尽管，**构造函数**并没有实现传统面向类语言的真正的实例化，JS中的“实例”与“继承”和传统语言的最大区别在于：实例与继承都是索引的形式存在，并没有实现复制。JS中，我们可能用**delegation link**更贴切地表达这种关系。
 
 
 
