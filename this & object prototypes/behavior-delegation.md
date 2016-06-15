@@ -59,6 +59,82 @@ JavaScript中，[[Prototype]]机制使得对象间建立了联系，这种方式
 2. 面向对象设计时，实例常会定义和类相同的函数名，以此可以覆盖类上的方法，OLOO这是相反地，基于代理机制，我们尽可能定义不同方法，这可能没有很明显的好处，但是，代码的维护和可读性就大大地提高了。
 3. `this.setID()`，在`XYZ`对象上调用`setID`方法：哟，这个对象上木有，[[Prototype]]意味着要去`Task`看看，哟，还真有呀！这里，根据`this`的调用机制，很明显是绑定到XYZ对象上的（不记得呢？你丫的回去复习复习this绑定规则1234😡)。
 
+代理方法：在某对象上没有找到属性或方法时，通过代理，以索引的方式链接到另外的对象。
+
+### 调试
+
+JS的调试就是要利用好浏览器，因为没有标准的方法，而每个浏览器又都有自己的一套规则，或者说技术，这使得我们对JS的调试都不那么统一：
+
+```js
+function Foo() {}
+var a1 = new Foo();
+a1; //Foo{}
+```
+最后一行代码在Chrome和Firefox中会有差异，我们就不深究差异何处，我们仔细研究Chrome的表现吧！
+
+```js
+function Foo() {}
+var a1 = new Foo();
+a1.constructor; //Foo(){};
+a1.constructor.name; //Foo
+```
+
+从这里我们就有疑惑了，是不是我们访问`a1`时，Chrome就只是访问了它的`constructor.name`属性呢？令人不解的是，有时是这么回事，有时又不是这么回事的。
+
+```js
+function Foo() {}
+var a1 = new Foo();
+Foo.prototype.constructor = function Gotcha() {};
+a1.constructor; //Gotcha(){};
+a1.constructor.name; //Gotcha
+a1; //Foo {}
+```
+
+依然返回的是`Foo`，这说明并不是直接获取`constructor.name`，所以好像看起来对之前的问题有了答案了，且慢，再看看下面**OLOO**风格的代码：
+
+```js
+var Foo = {};
+var a1 = Object.create( Foo );
+a1; //Object
+Object.defineProperty( Foo, 'constructor', {
+				enumerable: false,
+				value: function Gotcha() {}
+});
+a1; //Gotcha
+```
+原作者说，这里返回`Gotcha`是个bug，说以后版本会改，但是我现在还是一样的，其实这些知识是一些琐碎的细节，了解了解就好的。
+
+### 比较
+
+到现在为止，我们从原理层面上了解了“类”和“代理”的一些差异，接下来看看它们：
+
+面向“类”（原型）：
+
+```js
+function Foo(who) {
+				this.me = who;
+}
+
+Foo.prototype.identify = function() {
+				return "I am " + this.name;
+};
+
+function Bar(who) {
+				Foo.call( this, who );
+}
+
+Bar.prototype.speak = function() {
+				console.log( "Hello, " + this.identify() + ".");
+};
+
+var b1 = new Bar( "b1" );
+var b2 = new Bra( "b2" );
+b1.speak();
+b2.speak();
+```
+
+
+
 
 
 
