@@ -132,6 +132,44 @@ var b2 = new Bra( "b2" );
 b1.speak();
 b2.speak();
 ```
+这里有顶层父类`Foo`，`Bar`继承于它，而由`Bar`“构造”出`b1`,`b2`。`b1`代理到`Bar.prototype`，而`Bar.prototype`代理到`Foo.prototype`上。
+
+**OLOO**风格：
+
+```js
+var Foo = {
+				init: function(who) {
+								this.me = who;
+				},
+				identify: function() {
+								return "I am " + this.me;
+				}
+};
+
+var Bar = Object.create( Foo );
+Bar.speak = function() {
+				console.log( "Hello, " + this.identify() + ".");
+};
+var b1 = Object.create( Bar );
+b1.init( "b1" );
+var b2 = Object.create( Bar );
+b2.init( "b2" );
+b1.speak();
+b2.speak();
+```
+
+同样，我们建立起了`b1`-->`Bar`-->`Foo`间的联系，和OO风格一样，但是我们简化了整个代码，仅仅只是建立了这个三个对象的链接，而且看起来也不想类（本身就不是类，只是模拟了一下而已）。
+
+我们看看二者的模型：
+
+![模拟类的模型](./fig4.png)
+
+![模拟类的简化模型](./fig5.png)
+
+![OLOO模型](./fig6.png)
+
+
+
 
 
 
