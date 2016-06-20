@@ -170,6 +170,246 @@ b2.speak();
 
 这三个图一出，我想我们都会选择最简单的模型吧，最后一个种方法就是我们上面提及的**OLOO**风格的编码，它少了很多可能出现问题的环节，但是也是最大程度的利用了我们的原型链来实现继承或者说是代理，也就是完成了我们最核心最实质的需求：建立对象间的联系。
 
+### 昆仑论剑
+
+我们说了很多关于类和对象间的理论性差异等，但是实践起来真的有说起来这么好听好吗？*Talk is cheaper, show me the code*.我们用一个widget来试试。
+
+#### 类widget
+
+我们可能曾经习惯使用OO的设计模式，我们可能能立刻给出一个方案：来个一个父类（Widget），它有各种widget的共同属性，接着基于它创建一个子类（比如按钮），从代码层面来说
+就是这个样子的：
+
+```js
+
+//parent class
+function Widget(width, height) {
+				this.width = width || 50;
+				this.height = height || 50;
+				this.$element = null;
+}
+
+//add method
+Widget.prototype.render = function($where) {
+				if(this.$element) {
+								this.$element.css( {
+												width: this.width + 'px';
+												height: this.height + 'px';
+								}).appendTo( $where );
+				}
+};
+
+//Child class
+function Button(width, height, label) {
+				//super constructor call
+				Widget.call(this, width, height);
+				this.label = label || 'Default';
+				this.$element = $('<button>').text( this.$label );
+}
+
+//make Button inherit from Widget
+Button.prototype =Object.create( Widget.prototype );
+//overwrite base inherited render method
+Button.prototype.render = function($where) {
+				//super call
+				Widget.prototype.render.call( this. $element );
+				ths.$element.click ( this.onClick.bind( this ) );
+};
+Button.prototype.onClick = function(event) {
+				console.log( "Button '" + this.label + "' clicked! " );
+};
+
+$(document).ready( function() {
+				var $body = $(document.body);
+				var btn1 = new Button( 125, 30, "Hello");
+				var btn2 = new Button( 150, 40, "world");
+				btn1.render( $body );
+				btn2.render( $body );
+});
+```
+#### *ES6* `class`
+
+先不提吧！
+
+#### OLOO风格
+
+我们尝试用OLOO风格来实现下：
+
+```js
+var Widget = {
+				init: function( width, height) {
+								this.width = width || 50;
+								this.height = width || 50;
+								this.$element = null;
+				},
+				insert: function( $where ) {
+								if(this.$element) {
+												this.$element.css({
+																width: this.width + 'px';
+																height: this.height + 'px';
+												}).appendTo( $where );
+								}
+				}
+};
+
+var Button = Object.create( Widget );
+Button.setup = function(width, height, label) {
+				this.init( width, height);
+				this.label = label || 'default';
+				this.$element = $( '<button>').text( this.label );
+};
+
+Button.build = function($where) {
+				//delegated call
+				this.insert ( $where );
+				this.$element.click ( this.onClick.bind (this));
+};
+
+Button.onClick = function(event) {
+				console.log( "Button '" + this.label + " 'clicked!");
+};
+
+$( document ).ready( function() {
+				var $body = $( document.body );
+				var btn1 = Object.create( Button );
+				btn1.setup( 125,30,"LOL");
+				btn1.build( $body );
+};
+```
+
+我们不把Widget当做是一个父类，同样也不把Button当做它的一个子类，它们都是独立的一个对象，Widget是一个有各种好用属性和方法的集合，任何特定的widget都可能代理到它，
+而我们的Button刚好建立了这么个代理关系。
+
+OLOO风格的代码看起来更简单，明了，联想到我们的模型，它也确实简单很多，也咩有`prototype`等干扰，总而言之，在完成功能的前提下，我们把架构简化了，这也是降低错误
+一个方向。
+
+#### 简洁的设计
+
+OLOO给我们更简单，更灵活地设计风格，通过代理的方式可以让我们的拥有强壮的代码架构，我们在来看看一些例子：
+
+两个控制器，一个是登录，一个是服务器授权。
+
+经典的类设计风格，我们需要将这个任务分割成一个基础类（Controller），再分支处两个子类*LoginController*和*AuthController*，它们都继承与*Controller*，并拥有自己的
+特定的方法：
+
+```js
+//parent class
+function Controller() {
+				this.errors = [];
+};
+
+Controller.prototype.showDiag = function( title, message ) {
+				//display title message to user in a dialog
+};
+Controller.prototype.success = function( message ) {
+				this.showDialog( "Sucess", message );
+};
+Controller.prototype.failure = function( error ) {
+				this.errors.push( error );
+				this.showDialog( "Error", error );
+};
+```
+
+```js
+//child class
+function LoginController() {
+				Controller.call( this );
+}
+
+//link child class to parent
+LoginController.prototype = Object.create( Controller.prototype );
+LogonController.prototype.getUser = function() {
+				return document.getElementById( 'login_username' ).value;
+};
+LoginController.prototype.getPassword = function() {
+				return document.getElementById( 'login_password' ).value;
+}
+
+LoginController.prototype.validateEntry = function(user,password) {
+				user = user || this.getUser;
+				password = password || this.getPassword;
+				if( !(user password) ) {
+								return this.failuer( 'Please enter a username and password' );
+				}else if( password.length <= 5 ) {
+								return this.faliure ( 'Password must be 6 characters and above!' );
+				}
+				//be here? validated
+				return true;
+};
+
+//Override to extend base 'failure()'
+LoginController.prototype.failure = function( error ) {
+				//super call
+				Controller.prototype.failuer.call( this, "Login invalid: " + error;
+};
+```
+
+```js
+
+//child class
+function AuthController(login) {
+				Controller.call ( this );
+				//in addtion to inheritance, we also need composition
+				this.login = login;
+}
+//link child class to parent
+AuthController.prototype = Object.create( Controller.prototype );
+AuthController.prototype.server = function( url, data ) {
+				return $.ajax( {
+								url: url,
+								data: data 
+				});
+};
+
+AuthController.prototype.checkAuth = function() {
+				var user = this.login.getUser();
+				var password = this.login.getPassword();
+
+				if( this.login.validateEntry ( user, password ) ) {
+								this.server( '/check-auth, {
+												user: user,
+												password: password
+								})
+								.then( this.success.bind ( this ) )
+								.fail( this.failure.bind( this ) );
+				}
+};
+
+//override to extend base 'success()'
+AuthController.prototype.success = function() {
+				//super call
+				Controller.prototype.success.call( this, "Authenticated");
+};
+
+//override to extend base 'failure()'
+AuthController.prototype.failure = function(error) {
+				//super call
+				Controller.prototype.failure.call( this, "Auth Failed: " + error );
+};
+```
+
+```js
+var auth = new AuthController(
+//in addtion to inheritance, we also need composition
+new LoginController()
+);
+auth.checkAuth();
+```
+
+代码比较多，需要仔细体会！
+
+
+
+
+
+				
+
+				
+								
+
+
+
+
+
 
 
 
