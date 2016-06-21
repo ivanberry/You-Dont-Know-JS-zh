@@ -14,6 +14,7 @@ DONE:
 
 [函数原型](ZH-YDKJS/prototypes.md)
 
+[Behavior Delegation](ZH-YDKJS/behavior-delegation.md)
 
 
 
