@@ -397,7 +397,95 @@ auth.checkAuth();
 
 代码比较多，需要仔细体会！
 
+#### 去类化
 
+上面的代码对我这个一开始就接触JavaScript而言，也不是那么容易懂，我们先放置，先看看OLOO风格是如何充分利用好原型继承的前提下，简化实现我们的功能：
+
+```js
+var LoginController = {
+				errors: [],
+				getUser: function() {
+								return document.getElementById( 'login_username' ).value;
+				},
+				getPassword: function() {
+								return document.getElmenetById( 'login_password' ).value;
+				},
+				validateEntry: function( user, password ) {
+								user = user || this.getUser();
+								password = password || this.getPassword();
+								if( ! (user && password) ) {
+												return this.failure ( 'Please enter a username and password!');
+								}else if( password.length < 5 ) {
+												return this.failure( 'Password must be 5+ characters!' );
+								}
+								//get here? validated!!
+								return true;
+				},
+				showDialog: function(title, message) {
+								//display some errors
+				},
+				failure: function( errors ) {
+								this.errors.push( errors );
+								this.showDialog( 'Error: ', 'Login invalid: ' + errors );
+				}
+};
+```
+
+```js
+//link authController to delegate to LoginController
+var AuthController = Object.create( LoginController );
+AuthController.errors = [];
+AuthContoller.checkAuth = function() {
+				var user = this.getUser();
+				var passwrod = this.getPassword();
+				if( this.validateEntry( user, password )) {
+								this.server( '/check-auth', {
+												user: user,
+												password: password
+												})
+												.then( this.accepted.bind( this ))
+												.fail( this.rejected.bind( this ))
+												}
+};
+AuthController.server = function( url, data ) {
+				return $.ajax( {
+								url: url,
+								data: data
+				});
+};
+AuthController.accepted = function() {
+				this.showDialog ( 'Sucess', 'Authenticated' );
+};
+AuthController.rejected = function() {
+				this.failure ( 'Auth Failed: ' + errors );
+};
+```
+
+因为`AuthController`仅仅就是一个对象，`LoginController`同样也只是一个对象，我们不需要对它们进行实例化来使用，需要调用它只要：
+
+```js
+AuthController.checkAuth();
+```
+
+当然，如果你需要利用代理链来创建更多的对象，也很简单：
+
+```js
+var controller1 = Object.create( AuthController );
+var controller2 = Object.create( AuthController );
+```
+通过代理，`AuthController`和`LoginController`都仅仅只是对象，平级的对象，它们间可以随意更改代理关系来实现我们的功能需求，另外OLOO风格的编码方式使得我们仅有两个入口（`LoginController`和`AuthController`，没有更多的。
+
+我们不需要一个公共的`Controller`来共享一些属性，因为原型链的特性本身就提了我们需要的功能，同样，我们也不需要实例化一个类，因为类的概念在JavaScript是不存在的，只有对象而已。另外，我们也不需要组合它们，代理使得两个对象进行地差异化合作。
+
+最后，我们应避免应用相同的属性或方法名来”覆盖“，比如`accepte, reject`和`success, failure`的差异，使用更明确的变量名来描述我们更加独特的特性，代码结构简单，逻辑清晰。
+
+### 总结
+
+类与继承是在软件架构中，你可以选择或者忽略的设计模式。大多数开发者认为”类“是仅有的或者说合适的方法来组织代码，但是我们这里展现了一种同样有效，而且更加简洁，清晰的实现方法：代理(behavior delegation)。
+
+*Behavior delegation*建议我们平级化对象，通过代理建立相互的联系，而不是建立父类与子类的关系。JavaScript的原型特性是很自然语法实现，我们可以充分利用它来实现对象的联系。
+
+**OLOO**利用JavaScript的原生的原型继承链来实现对象的关联，而不需要去模拟”类“这种实际不存于JavaScript中的不友好（至少代码层和模型）来实现对象间的联系，功能上没有差异，简洁，逻辑更加清晰地利用[[Prototype]]，我们何乐而不为呢？
 
 
 
