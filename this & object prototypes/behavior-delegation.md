@@ -365,7 +365,7 @@ AuthController.prototype.checkAuth = function() {
 				var password = this.login.getPassword();
 
 				if( this.login.validateEntry ( user, password ) ) {
-								this.server( '/check-auth, {
+								this.server( '/check-auth', {
 												user: user,
 												password: password
 								})
