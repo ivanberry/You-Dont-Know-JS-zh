@@ -95,5 +95,61 @@ bar();
 
 不管我们通过什么方式把内部函数传递到外部，它都将维护一个索引，指向它定义的位置，无论我们在哪里调用它，闭包就起作用哒:boom::boom::boom:
 
+### 我们得到了什么
+
+之前的代码有很重的学术气味，我们实际编码过程中可能更多的会是这样：
+
+```js
+function wait( message ) {
+
+				setTimeout( funciton timer() {
+								console.log( message );
+				}, 1000);
+}
+wait( "hello, clourse" );
+```
+
+我们定义另一个`timer`函数，并将它传递给`setTimeout`函数，因此`timer`对`wait`作用域有封闭作用（就是说若两个函数中存在相同的变量，首先获取的是`timer`内部的变量值，这就是所谓的作用域封闭作用），`timer`保持并使用一个索引指向变量`reference`。
+
+在`wait`执行后1s，理论上`wait`的作用域应该已经被GC回收了，然而并没有......
+
+假如你使用jQuery，你可能会有这样的代码：
+
+```js
+function setupBot(name, selector) {
+				$(selector).click(function actiator() {
+								console.log( "Activating: " + name);
+				});
+}
+setupBot( "closure Bot 1", "#bot_1");
+
+无论何时，无论何地（我怎么唱起来了？），计时器，事件处理函数，Ajax请求，跨窗口信息传递，web workers，或者任何异步或同步的任务，当你讲函数作为回调执行时，就做好闭包自然出现的准备吧！
+
+第三中，我们提到*IIFE*函数，有人说这就是个闭包很好的例子：
+
+```js
+var a = 2;
+(function IIFE() {
+				console.log( a );
+})();
+```
+其实不然，这里的代码可能能起到作用，但是这并不能说明它是一个闭包很好的展现例子，这里只是简单的实现了词法作用域的查询而已，最重要的是，函数`IIFE`并没有在其词法作用域之外被调用，所以它并不能称为一个闭包，尽管如此，它仍是跟闭包紧密联系着的。
+
+### 循环与闭包
+
+闭包最常使用的场景是循环的使用：
+
+```js
+for( let i = 1; i<=5; i++) {
+				setTimeout( function timer() {
+								console.log(i);
+								},1000);
+}
+```
+你可能与其目标是：1 2 3 4 5，但是你肯定不能如愿，啊哈哈！输出结果是：66666,可谓是六六大顺啊！
+
+这就奇怪了，怎么就不是我们的与其结果呢？
+
+
 
 
