@@ -148,7 +148,104 @@ for( let i = 1; i<=5; i++) {
 ```
 你可能与其目标是：1 2 3 4 5，但是你肯定不能如愿，啊哈哈！输出结果是：66666,可谓是六六大顺啊！
 
-这就奇怪了，怎么就不是我们的与其结果呢？
+这就奇怪了，怎么就不是我们的预期结果呢？
+
+很明显，6是因为循环结束时的i值，也就是说这里的定时回调函数是在循环完全结束后才开始运行的，为什么我们不能得到预期的结果呢？
+
+我们预期得到每次循环的特定`i`值，但是作用域机制不是这么回事，我们在每个循环中定义的函数，其实都共享着同一作用域，这个作用域中只有唯一一个变量`i`。其实代码中循环中假如定时器，并传入回调函数，跟一个一个定义这个回调函数没有差别，根本没有什么循环存在。
+
+回到我们的问题？我们到底少了什么东西！我们需要一个闭包，为每一个循环建立一个封闭作用域。
+
+```js
+(function() {
+				for(var i = 1; i<=5;i++) {
+								setTimeout(function timer() {
+												console.log(i);
+								},i*1000);
+				}
+}();
+```
+
+结果会怎么样呢？
+
+
+
+
+
+
+
+啊哈！还是跟之前那个一样的吧？为啥？
+
+确实，我们有了一个新的词法作用域，但是这个新的作用域里连跟毛的都没有，仅仅只是挂了壳而已，没什么卵用！我们需要在这个作用域里，给每个循环顶一个变量才会使得这个作用域有意义的。
+
+```js
+for(var i=1;i<=5;i++) {
+				(function() {
+								var j = i;
+								setTimeout(function timer() {
+												console.log( j );
+								},j*1000);
+				})();
+}
+```
+
+Done!
+
+```js
+for (var i =1;i<=5; i++) {
+				(function(j) {
+								setTimeout(function timer() {
+												console.log( j );
+								},j*1000);
+				}(i);
+}
+```
+### 再回首块级作用域
+
+我们通过IIFE函数新建了一个作用域，回顾我们之前*ES6*中块级作用域的相关知识，我们不难想到`let`，其实可以这么做：
+
+```js
+for( let i=1; i<=5;i++) {
+				setTimeout( function timer() {
+								console.log( i );
+				};
+}
+```
+
+简直啦！
+
+### 模块
+
+通过回调函数，我们接触了闭包的一个使用途径，但是它却不是这么简单的应用而已！
+
+*模块化*
+
+```js
+function CoolModule() {
+				var something = 'cool';
+				var another = [1,2,4];
+				function doSomething() {
+								console.log( something );
+				}
+				function doAnother() {
+								console.log( anther.join('!' );
+				}
+//no closure now!
+
+				return {
+								doSomething: doSomething,
+								doAnother: doAnother
+				}
+}
+
+var foo = CoolModule();
+foo.doSomething(); //cool
+foo.doAnother(); //1 ! 2 ! 3
+```
+
+
+
+
 
 
 
