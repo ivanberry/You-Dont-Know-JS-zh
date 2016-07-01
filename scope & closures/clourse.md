@@ -242,7 +242,79 @@ var foo = CoolModule();
 foo.doSomething(); //cool
 foo.doAnother(); //1 ! 2 ! 3
 ```
+Javascript中，我们称它为模块，我们仔细分析下上面的代码。
 
+首先，`CoolModule()`是个函数，它调用实现模块实例化，没有它的执行，内部函数是不会暴露出来的。紧接着`CoolModule`返回一个对象，返回的对象是通过字面量定义的，对象仅保存着指向内部函数的指引，用这个办法使得，数据和变量等保存私有和封闭，可以说，返回的值是公用的API。
+
+返回的对象赋值给变量`foo`，这样我们可以通过`foo.doSomething`来访问这些属性了。
+
+**注意**：其实，我们不一定要返回一个对象来实现方法的公用，返回一个函数或者其他你想返回的形式也是可以的，这里`jQuery`就是很好的典范。
+
+这里的闭包在哪儿呢？返回的方法对模块实例有封闭作用，来个简单的例子：
+
+```js
+function CoolModule() {
+				a = [1,2,3];
+				function doSomething() {
+								console.log( a );
+				}
+
+				return {
+								doSomething: doSomething
+				}
+}
+
+var foo = CoolModule();
+foo.a = 2;
+foo.doSomething(); //???
+
+```
+最有一行会输出什么呢？这就是上面说的方法对模块实例的作用域的封闭作用。Did you get it?
+
+简单来说，利用闭包实现模块需要：
+
+- 外部函数的包裹，因此才能实现内部函数对实例作用域的封闭
+- 返回
+
+另外一个重要的点是可以通过定义个内部变量来维护你的API：
+
+```js
+function CoolModule() {
+				var a = 2;
+				function doSomething() {
+								console.log( a );
+				}
+
+				var publicAPI = {
+								doSomethingStuff: doSomething
+				};
+
+				return publicAPI;
+}
+```
+
+### 现代模块化模式
+
+直接上代码说话：
+
+```js
+var MyModule = (function Manager() {
+				var modules = {},
+				function define(name, deps, impl) {
+								for (var i = 0; i<deps.length; i++) {
+												deps[i] = modules[deps[i]];
+								}
+								modules[name] = impl.apply( impl, deps );
+				}
+				function get(name) {
+								return modules[name];
+				}
+				return {
+								define: define,
+								get: get
+				};
+})();
+```
 
 
 
