@@ -16,29 +16,4 @@ DONE:
 
 [Behavior Delegation](ZH-YDKJS/behavior-delegation.md)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+[异步与性能](ZH-YDKJS/async-performace.md)
